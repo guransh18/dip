@@ -247,7 +247,7 @@ DELETE FROM EMPLOYEE w
 WHERE w.EMPLOYEE.EXTRACT('/EMPLOYEE/ACC_NO/text()').getStringVal() = '12345' 
 ```
 
-### **Practical 04**
+### **Practical 04 - Temporal**
 ```sql
 -- CREATE TABLE
 CREATE TABLE SHARES (
@@ -347,7 +347,7 @@ where company_name = 'ComapnyA'
 order by valid_from;
 ```
 
-### **Practical 05**
+### **Practical 05 - Spacial**
 ```sql
 -- Create the table to store market data with spatial geometry
 CREATE TABLE cola_markets1(
@@ -511,7 +511,7 @@ JOIN C##USER2.student2 s2 ON s1.roll_no = s2.roll_no
 WHERE s2.fees_paid > 50000;
 ```
 
-### **Practical 07**
+### **Practical 07 - HORIZONTAL FRAGMENTATAION**
 ```sql
 --TABLE BOOK
 CREATE TABLE Book(id INT, name VARCHAR2(10));
@@ -562,7 +562,7 @@ SELECT * FROM Book1 UNION SELECT * FROM Book@Link001;
 
 ```
 
-### **Practical 08**
+### **Practical 08 - MONGODB**
 ```sql
 // Switch to the 'electronics_store' database
 use electronics_store;
@@ -618,7 +618,7 @@ db.products.find().sort({ stock: -1 });
 
 ```
 
-### **Practical 09**
+### **Practical 09 - REDIS**
 ```sql
 --ToDo List
 LPUSH todo:list "Buy groceries"
