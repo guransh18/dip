@@ -1,16 +1,5 @@
-# adbms
 
-link - 
 https://tanishhhhh.notion.site/Practical-Exam-1547836f7463806d971ccd89a4884836 
-
-Here is the formatted version of all the practicals with the queries on a new line after the comments:
-
----
-
-# **ADBMS Practical Exam**
-
-## Link  
-[Practical Exam](https://tanishhhhh.notion.site/Practical-Exam-1547836f7463806d971ccd89a4884836)
 
 ---
 
