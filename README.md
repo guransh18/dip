@@ -62,575 +62,761 @@ imshow(BW);
 title('Binary Image');
 ```
 
-### **Practical 02: ORDBMS**
-#### **Address Object Type**
-```sql
--- Address
-CREATE OR REPLACE TYPE AddrType1 AS OBJECT (
-    Pincode    NUMBER(5),
-    Street     CHAR(20),
-    City       VARCHAR2(20),
-    State      VARCHAR2(40),
-    No         NUMBER(4)
-);
+### **Practical 02**
 
--- Branch
-CREATE OR REPLACE TYPE BranchType AS OBJECT (
-    Address  AddrType1,
-    Phone1   INTEGER,
-    Phone2   INTEGER
-);
+```matlab
+clc; clear; close all;
 
-CREATE OR REPLACE TYPE BranchTableType AS TABLE OF BranchType;
-NESTED TABLE Branches STORE AS BranchTable;
+% ========== 1. Slice Viewer ==========
+I = imread("C:\Users\admin\Downloads\HD-wallpaper-anime-vagabond-miyamoto-musashi.jpg");
+cmap = parula(200);
+figure;
+sliceViewer(I, "Colormap", cmap);
 
--- Author
-CREATE OR REPLACE TYPE AuthorType AS OBJECT (
-    Name    VARCHAR2(50),
-    Addr    AddrType1
-);
-CREATE OR REPLACE TYPE AuthorListType AS VARRAY(10) OF REF AuthorType;
-CREATE TABLE Authors OF AuthorType;
-INSERT INTO Authors VALUES (
-    'Tanish',
-    AddrType1(343, 'Savarkar', 'Thane', 'Maharashtra', 34)
-);
+title('Slice Viewer');
 
--- Publisher
-CREATE OR REPLACE TYPE PublisherType AS OBJECT (
-    Name     VARCHAR2(50),
-    Address  AddrType1,
-    Branches BranchTableType
-);
-CREATE TABLE Publishers OF PublisherType; -- Fix missing semicolon
-INSERT INTO Publishers VALUES (
-    'Tanish',
-    AddrType1(4002, 'Park Street', 'Mumbai', 'Maharashtra', 03),
-    BranchTableType(
-        BranchType(
-            AddrType1(5002, 'Fstreet', 'Mumbai', 'Maharashtra', 03),
-            234234,
-            3245434
-        )
-    )
-);
+% ========== 2. Imcrop ==========
+figure;
+imshow(I);
+J = imcrop(I);
+figure;
+imshow(J);
+title('Cropped Image');
 
--- Books
-CREATE TABLE Books (
-    Title         VARCHAR2(50),
-    Year          DATE,
-    Published_By  REF PublisherType,
-    Authors       AuthorListType
-);
-INSERT INTO Books 
-SELECT 
-    'IP',
-    TO_DATE('28-MAY-1983', 'DD-MON-YYYY'),
-    REF(pub),
-    AuthorListType(REF(aut))
-FROM 
-    Publishers pub, 
-    Authors aut 
-WHERE 
-    pub.Name = 'Tanish' 
-    AND aut.Name = 'Tanish';
+% ========== 3. Resize and Rotate ==========
+croppedImage = imcrop(I);
+resizedImage = imresize(croppedImage, [300 400]);
+rotatedImage = imrotate(resizedImage, 45);
+figure;
+imshow(rotatedImage);
+title('Resized and Rotated Image');
 
--- Queries
--- a) List all of the authors that have the same pin code as their publisher:
-SELECT a.Name AS Author_Name
-FROM Authors a, Publishers p
-WHERE a.Addr.Pincode = p.Address.Pincode;
+% ========== 4. Imrescale ==========
+I_rescaled = imresize(I, 0.2);
+figure;
+imshow(I_rescaled);
+title('Rescaled Image (20%)');
 
--- b) List all books that have 2 or more authors:
-SELECT b.Title AS Book_Title
-FROM Books b
-WHERE CARDINALITY(b.Authors) >= 2;
+% ========== 5. 2D View ==========
+viewer2D = viewer2d;
+imageshow(I, 'Parent', viewer2D);
+viewer2D.ScaleBar = "off";
+title('2D View');
 
--- c) List the name of the publisher that has the most branches:
-SELECT p.Name AS Publisher_Name
-FROM Publishers p
-WHERE CARDINALITY(p.Branches) = (
-    SELECT MAX(CARDINALITY(p1.Branches))
-    FROM Publishers p1
-);
-
--- d) Name of authors who have not published a book:
-SELECT a.Name AS Author_Name
-FROM Authors a
-WHERE NOT EXISTS (
-    SELECT 1 
-    FROM Books b 
-    WHERE a.OBJECT_ID = ANY(SELECT REF(aut) FROM TABLE(b.Authors) aut)
-);
-
--- e) Name of authors who have not published a book (alternative approach):
-SELECT a.Name AS Author_Name
-FROM Authors a
-WHERE a.Name NOT IN (
-    SELECT au.Name
-    FROM Books b, TABLE(b.Authors) au
-);
+% ========== 6. 3D View ==========
+viewer3D = viewer3d(BackgroundColor="white", GradientColor=[0.5 0.5 0.5], Lighting="on");
+load(fullfile(toolboxdir("images"), "imdata", "BrainMRILabeled", "images", "vol_001.mat"));
+mriVol = volshow(vol, 'Parent', viewer3D);
+viewer3D.CameraPosition = [120 120 200];
+viewer3D.CameraTarget = [120 120 -10];
+viewer3D.CameraUpVector = [0 1 0];
+viewer3D.CameraZoom = 1.5;
+title('3D View');
 
 ```
 
 ---
 
-### **Practical 03: XML**
+### **Practical 03**
 
-```sql
---CREATE 
-CREATE TABLE EMPLOYEE(
-    EMPLOYEE_ID NUMBER(4),
-    EMPLOYEE XMLTYPE
-);
+```matlab
+% ========== contrast ==========
 
-INSERT INTO EMPLOYEE VALUES (1, XMLTYPE(
-    '<EMPLOYEE ID = "1">
-    <NAME>TANISH1</NAME>
-    <EMAIL>TANISH@TANISH.COM</EMAIL>
-    <ACC_NO>12345</ACC_NO>
-    <DOJ>12/09/20005</DOJ>
-    </EMPLOYEE>'))
+I = imread("C:\Users\admin\Downloads\HD-wallpaper-anime-vagabond-miyamoto-musashi.jpg");
+I_gray = rgb2gray(I);  
+h1 = figure;
+imshow(I_gray);
+imcontrast;  
+ 
+% ========== sharpen ==========
+ 
+ a=imread("C:\Users\admin\Downloads\HD-wallpaper-anime-vagabond-miyamoto-musashi.jpg");
+figure,imshow(a);
+title('OG Img');
+b = imsharpen(a);
+figure, imshow(b)
+title('Sharpened Image');
 
---READ
-SELECT 
-    EXTRACT(E.EMPLOYEE, '/EMPLOYEE/NAME/text()').getStringVal() AS NAME,
-    EXTRACT(E.EMPLOYEE, '/EMPLOYEE/ACC_NO/text()').getStringVal() AS ACC_NO,
-	  EXTRACT(E.EMPLOYEE, '/EMPLOYEE/EMAIL/text()').getStringVal() AS EMAIL,
-    EXTRACT(E.EMPLOYEE, '/EMPLOYEE/DOJ/text()').getStringVal() AS DOJ
-FROM 
-    EMPLOYEE E;
-    
---UPDATE 
-UPDATE EMPLOYEE w
-SET EMPLOYEE = XMLTYPE('<EMPLOYEE ID = "1">
-    <NAME>TANISH1</NAME>
-    <EMAIL>TANISH@TANISH.COM</EMAIL>
-    <ACC_NO>1234567</ACC_NO>
-    <DOJ>12/09/20005</DOJ>
-    </EMPLOYEE>')
-WHERE w.EMPLOYEE.EXTRACT('/EMPLOYEE/ACC_NO/text()').getStringVal() = '12345' 
+% ========== fuse ==========
 
---DELETE
-DELETE FROM EMPLOYEE w
-WHERE w.EMPLOYEE.EXTRACT('/EMPLOYEE/ACC_NO/text()').getStringVal() = '12345' 
+A = imread("C:\TANISH PERSONAL\PHOTU\10666 (1).jpg"); % First image
+B = imread("C:\TANISH PERSONAL\PHOTU\screen-6.jpg");  % Second image
+
+% Resize images to the same size (if needed)
+B = imresize(B, [size(A,1), size(A,2)]); 
+
+% Fuse both images using 'blend' or 'falsecolor'
+C = imfuse(A, B, 'blend', 'Scaling', 'joint'); % You can also try 'falsecolor'
+imshow(C);
+
+% ========== squeeze ==========
+
+A = rand(1, 5, 1); % A 1×5×1 array
+B = squeeze(A); % B becomes a 5×1 array
+size(B) % Output: [5,1]
+
+% ========== montage ==========
+
+% Read images into a cell array
+img1 = imread("C:\Users\admin\Downloads\sample1.bmp");  % First image
+img2 = imread("C:\Users\admin\Downloads\yoga.jpg");  % Second image
+
+% Combine images into a cell array
+images = {img1, img2};
+
+% Display images as a montage
+montage(images);
+title('Image Montage');
+
+% ========== histogram equilization ==========
+
+I = imread("C:\Users\admin\Downloads\ironman.jpg");
+% Conversion of RGB to YIQ format
+b = rgb2ntsc(I);
+% Histogram equalization of Y component alone
+b(:, :, 1) = histeq(b(:, :, 1));
+% Conversion of YIQ to RGB format
+c = ntsc2rgb(b);
+% Display original and histogram equalized images
+imshow(I), title("Original Image");
+figure, imshow(c), title("Histogram Equalized Image");
+
+% ========== histogram  ==========
+
+I = imread("C:\Users\admin\Downloads\ironman.jpg");
+imshow(I), figure;
+I = im2double(I);
+
+% Convert the image to HSV
+hsv = rgb2hsv(I);
+h = hsv(:, :, 1);  % Hue channel
+s = hsv(:, :, 2);  % Saturation channel
+v = hsv(:, :, 3);  % Value channel
+
+% Total number of pixels
+pixels = numel(h);
+
+% Find locations of black and white pixels
+darks = find(v < 0.2);
+lights = find(s < 0.05 & v > 0.85);
+h([darks; lights]) = -1;
+
+% Get the number of pixels for each color bin
+black = length(darks) / pixels;
+white = length(lights) / pixels;
+red = length(find((h > 0.9167 | h <= 0.083) & h ~= -1)) / pixels;
+yellow = length(find(h > 0.083 & h <= 0.25)) / pixels;
+green = length(find(h > 0.25 & h <= 0.4167)) / pixels;
+cyan = length(find(h > 0.4167 & h <= 0.5833)) / pixels;
+blue = length(find(h > 0.5833 & h <= 0.75)) / pixels;
+magenta = length(find(h > 0.75 & h <= 0.9167)) / pixels;
+
+% Plot histogram of color distribution
+hold on;
+fill([0 0 1 1], [0 red red 0], 'r');
+fill([1 1 2 2], [0 yellow yellow 0], 'y');
+fill([2 2 3 3], [0 green green 0], 'g');
+fill([3 3 4 4], [0 cyan cyan 0], 'c');
+fill([4 4 5 5], [0 blue blue 0], 'b');
+fill([5 5 6 6], [0 magenta magenta 0], 'm');
+fill([6 6 7 7], [0 white white 0], 'w');
+fill([7 7 8 8], [0 black black 0], 'k');
+axis([0 8 0 1]);
+
+Trick to Remember
+HSV Hue is basically a color wheel mapped from 0 to 1 (instead of 0°–360°).
+Each primary and secondary color spans roughly 60° (or 1/6 = 0.1667 in the 0-1 range)
+Key Positions:
+Red: Starts at 0, wraps at 1
+Yellow: 1/6 (≈0.1667)
+Green: 2/6 (≈0.3333)
+Cyan: 3/6 (≈0.5)
+Blue: 4/6 (≈0.6667)
+Magenta: 5/6 (≈0.8333)
+Red again: 1 (or 0)
 ```
 
-### **Practical 04 - Temporal**
-```sql
--- CREATE TABLE
-CREATE TABLE SHARES (
-    CUSTOMER_NAME VARCHAR(20),
-    NUMBER_OF_SHARES NUMBER(10),
-    PRICE_PER_SHARE NUMBER(5),
-    TRANSACTION_TIME TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### **Practical 04 **
+```matlab
+% ========== Basic convolution ==========
 
--- INSERT DATA
-INSERT ALL 
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE) VALUES ('COMPANY_A', 100, 100)
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE) VALUES ('COMPANY_B', 200, 200)
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE) VALUES ('COMPANY_C', 300, 300)
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE) VALUES ('COMPANY_D', 400, 400)
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE) VALUES ('COMPANY_E', 500, 500)
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE) VALUES ('COMPANY_F', 600, 600)
-SELECT * FROM DUAL;
+x = [12:34];
+y = [56;78];
+z = conv2(x,y,"same");
+disp("basic convolution");
+disp(z);
 
--- VERIFY INSERTED DATA
-SELECT * FROM SHARES;
+% ========== Circular convolution ==========
 
--- INSERT DATA WITH TIMESTAMP
-INSERT ALL
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE, TRANSACTION_TIME) 
-    VALUES ('COMPANY_A', 100, 100, TIMESTAMP '2024-12-12 11:45:00.000000')
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE, TRANSACTION_TIME) 
-    VALUES ('COMPANY_B', 100, 100, TIMESTAMP '2024-11-09 01:15:00.000000')
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE, TRANSACTION_TIME) 
-    VALUES ('COMPANY_C', 100, 100, TIMESTAMP '2024-08-07 04:00:00.000000')
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE, TRANSACTION_TIME) 
-    VALUES ('COMPANY_B', 100, 100, TIMESTAMP '2024-01-06 02:15:00.000000')
-    INTO SHARES (CUSTOMER_NAME, NUMBER_OF_SHARES, PRICE_PER_SHARE, TRANSACTION_TIME) 
-    VALUES ('COMPANY_B', 100, 100, TIMESTAMP '2024-04-08 01:35:00.000000')
-SELECT * FROM DUAL;
+x = [1,1,1,1];
+y = [1,2,3,4];
+X = fft(x);
+Y = fft(y);
+z = ifft(X.*Y);
+disp("Circular")
+disp(z);
 
--- VERIFY INSERTED DATA WITH TIMESTAMP
-SELECT * FROM SHARES;
+% ========== Circular correlation between two signals ==========
 
--- QUERY 01: Select records where the price per share is greater than 15 and the transaction time is exactly '11:45:00'
-SELECT CUSTOMER_NAME 
-FROM SHARES 
-WHERE PRICE_PER_SHARE > 15 
-AND TO_CHAR(TRANSACTION_TIME, 'HH24:MI:SS') = '11:45:00';
 
--- QUERY 02: Select records where the price per share is the highest and the transaction time is exactly '01:35:00'
-SELECT CUSTOMER_NAME 
-FROM SHARES 
-WHERE PRICE_PER_SHARE IN (
-    SELECT MAX(PRICE_PER_SHARE) 
-    FROM SHARES 
-    WHERE TO_CHAR(TRANSACTION_TIME, 'HH24:MI:SS') = '01:35:00'
-);
+x = [5 10; 15 20];
+y = [3 6; 9 12];
 
-CREATE TABLE STOCK_PRICES (
-    COMPANY_NAME VARCHAR(50),
-    PRICE_PER_SHARE NUMBER(10,2),
-    VALID_FROM TIMESTAMP,
-    VALID_TO TIMESTAMP,
-    PRIMARY KEY(COMPANY_NAME, VALID_FROM)
-);
+h1 = fliplr(y);
+h2 = flipud(h1);
 
-INSERT ALL 
-    INTO STOCK_PRICES(COMPANY_NAME, PRICE_PER_SHARE, VALID_FROM, VALID_TO) 
-    VALUES('A', 100.5, TIMESTAMP '2023-02-03 00:00:00.000000', TIMESTAMP '2023-06-03 23:24:25.000000')
-    INTO STOCK_PRICES(COMPANY_NAME, PRICE_PER_SHARE, VALID_FROM, VALID_TO) 
-    VALUES('B', 110.5, TIMESTAMP '2023-03-03 01:00:00.000000', TIMESTAMP '2023-07-03 22:20:20.000000')
-    INTO STOCK_PRICES(COMPANY_NAME, PRICE_PER_SHARE, VALID_FROM, VALID_TO) 
-    VALUES('C', 120.5, TIMESTAMP '2023-04-03 00:00:00.000000', TIMESTAMP '2023-08-03 21:19:18.000000')
-    INTO STOCK_PRICES(COMPANY_NAME, PRICE_PER_SHARE, VALID_FROM, VALID_TO) 
-    VALUES('D', 130.5, TIMESTAMP '2023-05-03 00:00:00.000000', TIMESTAMP '2023-09-03 20:17:13.000000')
-    INTO STOCK_PRICES(COMPANY_NAME, PRICE_PER_SHARE, VALID_FROM, VALID_TO) 
-    VALUES('E', 140.5, TIMESTAMP '2023-06-03 00:00:00.000000', TIMESTAMP '2023-10-03 15:14:12.000000')
-SELECT * FROM DUAL;
+x1 = fft2(x);
+x2 = fft2(h2);
 
-SELECT * FROM STOCK_PRICES;
+y1 = x1 .* x2;
+y2 = ifft2(y1);
 
---Querying the temporal database: 
-SELECT COMPANY_NAME, PRICE_PER_SHARE
-FROM STOCK_PRICES
-WHERE COMPANY_NAME = 'A'
-AND SYSDATE BETWEEN VALID_FROM AND VALID_TO;
-
---Update stock prices:
-set valid_to = timestamp '2023-12-31, 23:59:59'
-whrere comapny_name = 'CompanyA'
-and valid_to = timestamp '9999-12-31 23:59:59'; 
-
---Insert the new stock price for Company A
-insert into stock_prices(company_name, price_per share, valid_from, valid_to)
-values ('CompanyA', 110.25, timestamp '2024-01-01 00:00:00', timestamp '9999-12-31 23:59:59);
-
---Get the full history of stock prices for Company A
-select company_name, price_per_share, valid_from, valid_to
-from stock_prices
-where company_name = 'ComapnyA'
-order by valid_from;
+disp("Circular Correlation");
+disp(real(y2));
 ```
 
-### **Practical 05 - Spacial**
-```sql
--- Create the table to store market data with spatial geometry
-CREATE TABLE cola_markets1(
-    Mkt_id NUMBER PRIMARY KEY,
-    Name VARCHAR(32),
-    Shape MDSYS.SDO_GEOMETRY
-);
+### **Practical 05**
+```matlab
+% ========== 2D DFT ==========
 
--- First Row: Inserting data for market 'abc' with geometry
-INSERT INTO cola_markets1 VALUES (1, 'abc', MDSYS.SDO_GEOMETRY(2003, NULL, NULL, MDSYS.SDO_ELEM_INFO_ARRAY(1, 1003, 3), MDSYS.SDO_ORDINATE_ARRAY(1, 1, 5, 7)));
+input_image = [1 1 1 1; 1 1 1 1; 1 1 1 1; 1 1 1 1];
+kernel = dftmtx(4);
+output = kernel * input_image * kernel';
+disp('Input Image:');
+disp(input_image);
+disp('DFT Kernel:');
+disp(kernel);
+disp('Output after DFT transformation:');
+disp(output);
 
--- Second Row: Inserting data for market 'pqr' with geometry
-INSERT INTO cola_markets1 VALUES (2, 'pqr', MDSYS.SDO_GEOMETRY(2003, NULL, NULL, MDSYS.SDO_ELEM_INFO_ARRAY(1, 1003, 1), MDSYS.SDO_ORDINATE_ARRAY(5, 1, 8, 1, 8, 6, 5, 7, 5, 1)));
+% ========== Demonstrate rotation property of DFT ==========
 
--- Third Row: Inserting data for market 'mno' with geometry
-INSERT INTO cola_markets1 VALUES (3, 'mno', MDSYS.SDO_GEOMETRY(2003, NULL, NULL, MDSYS.SDO_ELEM_INFO_ARRAY(1, 1003, 1), MDSYS.SDO_ORDINATE_ARRAY(3, 3, 6, 3, 6, 5, 4, 5, 3, 3)));
+%code to generate original image
+a=zeros(256);
+[m n]=size(a);
+for i = 120:145
+   for j=120:145
+   	a(i,j)=255;
+   end
+end
 
--- Fourth Row: Inserting data for market 'xyz' with geometry
-INSERT INTO cola_markets1 VALUES (4, 'xyz', MDSYS.SDO_GEOMETRY(2003, NULL, NULL, MDSYS.SDO_ELEM_INFO_ARRAY(1, 1003, 4), MDSYS.SDO_ORDINATE_ARRAY(8, 7, 10, 9, 8, 11)));
+%original image rotated by 45 degree
+b=imrotate(a,45,'bilinear','crop');
 
--- Fifth Row: Inserting metadata for the spatial column 'shape'
-INSERT INTO user_sdo_geom_metadata (table_name, column_name, diminfo, srid) 
-VALUES ('cola_markets1', 'shape', MDSYS.SDO_DIM_ARRAY(MDSYS.SDO_DIM_ELEMENT('X', 0, 20, 0.005), MDSYS.SDO_DIM_ELEMENT('Y', 0, 20, 0.005)), NULL);
+%spectrum of original image
+a1=log(1+abs(fftshift(fft2(a))));
 
--- Creating spatial index on 'shape' column for optimization
-CREATE INDEX cola_spatial_idx
-ON cola_markets1(shape)
-INDEXTYPE IS MDSYS.SPATIAL_INDEX;
+%spectrum of rotated image
+b1=log(1+abs(fftshift(fft2(b))));
 
--- Query to find the intersection of two market shapes
-SELECT sdo_geom.sdo_intersection(c_a.shape, c_c.shape, 0.005)
-FROM cola_markets1 c_a, cola_markets1 c_c
-WHERE c_a.name = 'abc' AND c_c.name = 'mno';
+subplot(2,2,1),imshow(a),title('Original image');
+subplot(2,2,2),imshow(b),title('Image rotated by 45 degree');
+subplot(2,2,3),imshow(mat2gray(a1)),title('Original Image Spectrum');
+subplot(2,2,4),imshow(mat2gray(b1)),title('spectrum of rotated image');
 
--- Query to check if two market shapes are equal within a tolerance
-SELECT sdo_geom.relate(c_b.shape, 'equal', c_d.shape, 0.005)
-FROM cola_markets1 c_b, cola_markets1 c_d
-WHERE c_b.name = 'abc' AND c_d.name = 'mno';
+% ========== Interchange phase between 2 images  ==========
 
--- Query to calculate the area of each market shape
-SELECT name, sdo_geom.sdo_area(shape, 0.005)
-FROM cola_markets1;
+a = imread('cameraman.tif');
+b = imread('C:\Users\admin\Downloads\images.png');
 
--- Query to calculate the area of a specific market shape 'xyz'
-SELECT c.name, sdo_geom.sdo_area(c.shape, 0.005)
-FROM cola_markets1 c WHERE c.name = 'xyz';
+% Resize image b to the size of image a
+b = imresize(b, size(a));
 
--- Query to calculate the distance between two market shapes
-SELECT sdo_geom.sdo_distance(c_b.shape, c_d.shape, 0.005)
-FROM cola_markets1 c_b, cola_markets1 c_d
-WHERE c_b.name = 'abc' AND c_d.name = 'xyz';
+% Perform 2D FFT on both images
+ffta = fft2(double(a));
+fftb = fft2(double(b));
+
+% Calculate magnitude and phase for both images
+mag_a = abs(ffta);
+ph_a = angle(ffta);
+mag_b = abs(fftb);
+ph_b = angle(fftb);
+
+% Combine magnitudes and phases for each image
+newfft_a = mag_a .* exp(1i * ph_b);
+newfft_b = mag_b .* exp(1i * ph_a);
+
+% Perform inverse FFT to reconstruct images
+rec_a = ifft2(newfft_a);
+rec_b = ifft2(newfft_b);
+
+% Display the images
+imshow(a), title('Original Image a');
+figure, imshow(b), title('Original Image b');
+figure, imshow(uint8(real(rec_a))), title('Image a after phase reversal');
+figure, imshow(uint8(real(rec_b))), title('Image b after phase reversal');
+
 
 ```
 
 ### **Practical 06**
-```sql
---VERTICAL FRAGMNENTATAION
-
---GLOBAL TABLE STUDENT 
-CREATE TABLE STUDENT (
-    ROLL_NO VARCHAR(20) PRIMARY KEY,
-    NAME VARCHAR(50),
-    DEPARTMENT VARCHAR(10),
-    ADDITIONAL_COURSE VARCHAR(20),
-    FEES_PAID NUMBER,
-    ADDRESS VARCHAR (50)
-);
-
--- Create user C##USER1:
-CREATE USER C##USER1 IDENTIFIED BY password;
-GRANT CONNECT, RESOURCE TO C##USER1;
-
--- Create user C##USER2:
-CREATE USER C##USER2 IDENTIFIED BY password;
-GRANT CONNECT, RESOURCE TO C##USER2;
-GRANT UNLIMITED TABLESPACE TO C##USER1, C##USER2;
-
--- Connect to C##USER1
-CONNECT C##USER1/password;
-CREATE TABLE student1 (
- roll_no INT PRIMARY KEY,
- name VARCHAR(50),
- address VARCHAR(100)
-);
-
--- Connect to C##USER2
-CONNECT C##USER2/password;
-CREATE TABLE student2 (
- roll_no INT PRIMARY KEY,
- department VARCHAR(50),
- additional_course VARCHAR(50),
- fees_paid DECIMAL(10, 2)
-);
-
---DATA INSERT 
-INSERT ALL 
-    INTO STUDENT(ROLL_NO, NAME, DEPARTMENT, ADDITIONAL_COURSE,FEES_PAID, ADDRESS) 
-    VALUES(001,'STUDENT1','CS','FINANCE',25000,'MUMBAI')
-    INTO STUDENT(ROLL_NO, NAME, DEPARTMENT, ADDITIONAL_COURSE,FEES_PAID, ADDRESS) 
-    VALUES(002,'STUDENT2','IT','AI',35000,'DELHI')
-    INTO STUDENT(ROLL_NO, NAME, DEPARTMENT, ADDITIONAL_COURSE,FEES_PAID, ADDRESS) 
-    VALUES(003,'STUDENT3','BBA','POWERBI',45000,'SURAT')
-    INTO STUDENT(ROLL_NO, NAME, DEPARTMENT, ADDITIONAL_COURSE,FEES_PAID, ADDRESS) 
-    VALUES(004,'STUDENT4','BBM','MARKET',55000,'THANE')
-    INTO STUDENT(ROLL_NO, NAME, DEPARTMENT, ADDITIONAL_COURSE,FEES_PAID, ADDRESS) 
-    VALUES(005,'STUDENT5','BFM','SOMETHING',65000,'PANVEL')
-SELECT * FROM DUAL;
-
---STUDENT1
-CONNECT C##USER1/password;
-INSERT ALL 
-    INTO STUDENT1(ROLL_NO,NAME,ADDRESS) 
-    VALUES(001,'STUDENT1','MUMBAI')
-    INTO STUDENT1(ROLL_NO, NAME,ADDRESS) 
-    VALUES(002,'STUDENT2','DELHI')
-    INTO STUDENT1(ROLL_NO, NAME,ADDRESS) 
-    VALUES(003,'STUDENT3','SURAT')
-    INTO STUDENT1(ROLL_NO, NAME,ADDRESS) 
-    VALUES(004,'STUDENT4','THANE')
-    INTO STUDENT1(ROLL_NO, NAME,ADDRESS) 
-    VALUES(005,'STUDENT5','PANVEL')
-SELECT * FROM DUAL;
-
---STUDENT2
-CONNECT C##USER2/password;
-INSERT ALL 
-   	INTO STUDENT2(NAME, DEPARTMENT, ADDITIONAL_COURSE, FEES_PAID) 
-	VALUES('STUDENT1','CS','FINANCE',25000)
-    INTO STUDENT2(NAME, DEPARTMENT, ADDITIONAL_COURSE, FEES_PAID) 
-	VALUES('STUDENT2','IT','AI',35000)
-    INTO STUDENT2(NAME, DEPARTMENT, ADDITIONAL_COURSE, FEES_PAID) 
-	VALUES('STUDENT3','BBA','POWERBI',45000)
-    INTO STUDENT2(NAME, DEPARTMENT, ADDITIONAL_COURSE, FEES_PAID) 
-	VALUES('STUDENT4','BBM','MARKET',55000)
-    INTO STUDENT2(NAME, DEPARTMENT, ADDITIONAL_COURSE, FEES_PAID) 
-	VALUES('STUDENT5','BFM','SOMETHING',65000)
-SELECT * FROM DUAL;
-
--- A] Display all records in the student table
-CONNECT SYSTEM;
--- Join tables from C##USER1 and C##USER2
-SELECT s1.roll_no, s1.name, s1.address, s2.department, s2.additional_course, s2.fees_paid
-FROM C##USER1.student1 s1
-JOIN C##USER2.student2 s2 ON s1.roll_no = s2.roll_no;
-
--- B] Display additional course name for student roll no 002
-SELECT additional_course 
-FROM C##USER2.student2 
-WHERE roll_no = 3;
-
--- C] Display fees paid for a given student name and roll no
-SELECT s2.fees_paid
-FROM C##USER1.student1 s1
-JOIN C##USER2.student2 s2 ON s1.roll_no = s2.roll_no
-WHERE s1.name = 'Jane Smith';
-
--- D] Display name of all students whose fees paid is greater than a given value (e.g., 1000)
-SELECT s1.name
-FROM C##USER1.student1 s1
-JOIN C##USER2.student2 s2 ON s1.roll_no = s2.roll_no
-WHERE s2.fees_paid > 50000;
-```
-
-### **Practical 07 - HORIZONTAL FRAGMENTATAION**
-```sql
---TABLE BOOK
-CREATE TABLE Book(id INT, name VARCHAR2(10));
-
---INSERT DATA 
-INSERT INTO Book VALUES(1, 'Python');
-INSERT INTO Book VALUES(2, 'Database');
-INSERT INTO Book VALUES(3, 'Big Data');
-INSERT INTO Book VALUES(4, 'Java');
-INSERT INTO Book VALUES(5, 'C++');
-
---DISPLAY 
-SELECT * FROM Book;
-
---CREATE A USER AND GRANT PRIVILEGES
-CREATE USER MyMSC IDENTIFIED BY MyMSC;
-GRANT CREATE SESSION TO MyMSC;
-GRANT CREATE TABLE TO MyMSC;
-GRANT UNLIMITED TABLESPACE TO MyMSC;
-GRANT CREATE DATABASE LINK TO MyMSC;
-
---CONNECT WITH THE MYMSC USER
-CONNECT C##MyMSC;
-
---CREATE A DATABASE LINK
-CREATE DATABASE LINK Link1 CONNECT TO system IDENTIFIED BY system;
-
---CONNECT WITH THE SYSTEM USER:
-CONNECT system;
-
---CHECK HOSTNAME
-SELECT HOST_NAME FROM v$instance;
-
---PUBLIC LINK
-CREATE PUBLIC DATABASE LINK Link001 CONNECT TO system IDENTIFIED BY system USING 'XE';
-SELECT * FROM Book@Link001;
-
---NEW TABLE 
-CREATE TABLE Book1(id INT, name VARCHAR2(10));
-INSERT INTO Book1 VALUES(3, 'Big Data');
-INSERT INTO Book1 VALUES(4, 'Data Sci');
-INSERT INTO Book1 VALUES(5, 'AI');
-INSERT INTO Book1 VALUES(6, 'ML');
-INSERT INTO Book1 VALUES(7, 'Cloud');
-SELECT * FROM Book1;
-
-SELECT * FROM Book1 UNION SELECT * FROM Book@Link001;
-
-```
-
-### **Practical 08 - MONGODB**
-```sql
-// Switch to the 'electronics_store' database
-use electronics_store;
-
-// Create a collection called 'products'
-db.createCollection("products");
-
-// Inserting multiple products
-db.products.insertMany([
- {
- prod_name: "Laptop Pro X",
- category: "Laptop",
- price: 120000,
- stock: 50,
- manufacturer: { name: "TechCorp", country: "USA" }
- },
- {
- prod_name: "Smartphone Z5",
- category: "Smartphone",
- price: 50000,
- stock: 200,
- manufacturer: { name: "MobileTech", country: "China" }
- },
- {
- prod_name: "Smartwatch S8",
- category: "Wearables",
- price: 15000,
- stock: 120,
- manufacturer: { name: "WearableWorks", country: "Germany" }
- }
-]);
-
-// Query all products in the 'Smartphone' category
-db.products.find({ category: "Smartphone" })
-
-// Update the price of 'Smartwatch S8' to 18000
-db.products.updateOne(
- { prod_name: "Smartwatch S8" },
- { $set: { price: 18000 } }
-);
-
-// Delete the product 'Laptop Pro X'
-db.products.deleteOne({ prod_name: "Laptop Pro X" });
-
-// Query products manufactured by 'MobileTech'
-db.products.find({ "manufacturer.name": "MobileTech" });
-
-// Query products with a price less than 20000
-db.products.find({ price: { $lt: 20000 } });
-
-// Sort products by stock in descending order
-db.products.find().sort({ stock: -1 });
-
-```
-
-### **Practical 09 - REDIS**
-```sql
---ToDo List
-LPUSH todo:list "Buy groceries"
-LPUSH todo:list "Read a book"
-LPUSH todo:list "Walk the dog"
-LRANGE todo:list 0 -1
-LPOP todo:list
-LRANGE todo:list 0 -1
-LRANGE completed:list 0 -1
-LREM todo:list 0 "Read a book"
+```matlab
+ % ========== Walsh Transform  ==========
  
- --example 02
-SET name 'John'
+ n = input('Enter the basis matrix dimension:');
+m = n;
 
-GET name
+for u = 0:n-1
+    for v = 0:n-1
+        for x = 0:n-1
+            for y = 0:n-1
+                powervalue = 1;
+                sn = log2(n);
+                for i = 0:sn-1
+                    a = dec2bin(x, sn);
+                    b = bin2dec(a(sn-i));
+                    c = dec2bin(y, sn);
+                    d = bin2dec(c(sn-i));
+                    e = dec2bin(u, sn);
+                    f = bin2dec(e(i+1));
+                    e = dec2bin(v, sn);
+                    a = bin2dec(e(i+1));
+                    powervalue = powervalue * (-1)^(b*f + d*a);
+                end
+                basis{u+1, v+1}(x+1, y+1) = powervalue;
+            end
+        end
+    end
+end
 
-INCR counter
+figure(1)
+k = 1;
+for i = 1:m
+    for j = 1:n
+        subplot(m, n, k)
+        imshow(basis{i, j}, []) 
+        k = k + 1;
+    end
+end
 
-RPUSH users "Alice"
+ % ========== Haar Transform  ==========
+ 
 
-LRANGE users 0 -1
-LLEN users
-LRANGE users 0 -1
-RPUSH users "Bob"
-RPUSH users "Sara"
-LLEN users
-LRANGE users 0 -1
+n = input('Enter the basis matrix dimension: ');
+m = n;
+for u = 0:n-1
+    for v = 0:n-1
+        for x = 0:n-1
+            for y = 0:n-1
+                powervalue = 0;
+                sn = log2(n);
+                for i = 0:sn-1
+                    a = dec2bin(x, sn);
+                    b = bin2dec(a(sn-i));
+                    c = dec2bin(y, sn);
+                    d = bin2dec(c(sn-i));
+                    e = dec2bin(u, sn);
+                    f = bin2dec(e(i+1));
+                    e = dec2bin(v, sn);
+                    a = bin2dec(e(sn-i));
+                    powervalue = powervalue + (b*f + d*a);
+                end
+                basis{u+1, v+1}(x+1, y+1) = (-1)^powervalue;
+            end
+        end
+    end
+end
 
-HSET product:101 name "Laptop" price 800 stock 10 category "Electronics"
-HSET product:102 name "Phone" price 500 stock 25 category "Electronics"
-HSET product:103 name "Headphones" price 100 stock 50 category "Accessories"
+mag = basis;
+figure(4)
+k = 1;
 
-HGETALL product:101
+% Code to plot Haar basis
+for i = 1:m
+    for j = 1:n
+        subplot(m, n, k)
+        % Ensure mag{i, j} is converted to a matrix
+        imshow(double(mag{i, j}), [])
+        k = k + 1;
+    end
+end
 
-ZADD product_prices 800 "product:101" 500 "product:102" 100 "product:103"
-ZRANGEBYSCORE product_prices -inf +inf WITHSCORES
 
-ZADD prices 800 "product:101" 500 "product:102" 100 "product:103"
-ZRANGEBYSCORE prices 100 600 WITHSCORES
+ % ========== DCT Transform  ==========
+ 
+ m = input('Enter the basis matrix dimension: ');
+n = m;
+alpha2 = ones(1, n) * sqrt(2/n);
+alpha2(1) = sqrt(1/n);
+alpha1 = ones(1, m) * sqrt(2/m);
+alpha1(1) = sqrt(1/m);
 
-HSET product:101 price 750
-HSET product:102 stock 20
+for u = 0:m-1
+    for v = 0:n-1
+        for x = 0:m-1
+            for y = 0:n-1
+                a{u+1, v+1}(x+1, y+1) = alpha1(u+1) * alpha2(v+1) * ...
+                    cos((2*x+1)*u*pi/(2*m)) * cos((2*y+1)*v*pi/(2*n));
+            end
+        end
+    end
+end
 
-DEL product:101
+mag = a;
+figure(3);
+k = 1;
+
+for i = 1:m
+    for j = 1:n
+        subplot(m, n, k);
+        imshow(mag{i, j}, []);
+        k = k + 1;
+    end
+end
+
+
+ % ========== DFT Transform  ========== 
+ 
+ img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+img = rgb2gray(img);
+img_double = double(img);
+dft_result = fft2(img_double);
+dft_shifted = fftshift(dft_result);
+magnitude_spectrum = log(abs(dft_shifted) + 1);
+subplot(1, 2, 1), imshow(img, []), title('Original Image');
+subplot(1, 2, 2), imshow(magnitude_spectrum, []), title('DFT Magnitude Spectrum');
 
 ```
+
+### **Practical 07**
+```matlab
+% ========== Brightness ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+%img = rgb2gray(img); 
+bright_img = img + 50;
+%bright_img(bright_img > 255) = 255;
+figure;
+subplot(1, 2, 1), imshow(img, []), title('Original Image');
+subplot(1, 2, 2), imshow(bright_img, []), title('Brightened Image (+50)');
+
+% ========== contrast ==========
+
+a = imread("C:\TANISH PERSONAL\PHOTU\02.jpg");
+b=rgb2gray(a);
+c=b*.5;
+d=b*20;
+imshow(a),title('Original Image')
+figure,imshow(c),title('Increase in contrast');
+figure,imshow(d),title('Decrease in contrast');
+
+% ========== Digital Negative ==========
+
+a = imread("C:\Users\admin\Downloads\luffy.jpg");
+k = 255 - a;
+subplot(2, 1, 1), imshow(a), title('Original Image')
+subplot(2, 1, 2), imshow(k), title('Negative of Original Image')
+
+% ========== threshold ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\02.jpg");
+img = rgb2gray(img);
+T = graythresh(img) * 255;
+binary_img = img > T;
+imshow(binary_img);
+
+% ========== graylevel slicing ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+img = rgb2gray(img); 
+low_threshold = 100;
+high_threshold = 200;
+sliced_img = img;
+sliced_img(img >= low_threshold & img <= high_threshold) = 255;
+subplot(1, 2, 1), imshow(img),title('Original Grayscale Image');
+subplot(1, 2, 2), imshow(sliced_img),title('Gray Level Sliced Image');
+
+% ========== bit plain slicing ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+img = rgb2gray(img); 
+for bit = 1:8
+    bit_plane = bitget(img, bit) * 255;
+    subplot(2, 4, bit),imshow(bit_plane),title('Bit Plane');
+end
+
+% ========== log transform ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+img = rgb2gray(img);
+img = double(img);
+c = 255 / log(1 + max(img(:))); 
+log_transformed = c * log(1 + img);
+log_transformed = uint8(log_transformed);
+figure;
+subplot(1, 2, 1), imshow(uint8(img)), title('Original Grayscale Image');
+subplot(1, 2, 2), imshow(log_transformed, []), title('Log Transformed Image');
+
+% ========== power law transform ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+if size(img, 3) == 3 
+   img = rgb2gray(img);
+end
+img = double(img) / 255; 
+gamma = 0.5; 
+c = 1; 
+power_transformed = c * (img .^ gamma);
+figure;
+subplot(1, 2, 1), imshow(img), title('Original Grayscale Image');
+subplot(1, 2, 2), imshow(power_transformed), title(['Power-Law Transform (Gamma = ', num2str(gamma), ')']);
+
+```
+
+### **Practical 08**
+```matlab
+
+```
+
+### **Practical 09 **
+```matlab
+
+% ========== Dilation ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+img = rgb2gray(img); 
+threshold = graythresh(img);
+binary_img = imbinarize(img, threshold);
+se = strel('disk', 5); 
+dilated_img = imdilate(binary_img, se);
+figure;
+subplot(1, 2, 1), imshow(binary_img), title('Original Binary Image');
+subplot(1, 2, 2), imshow(dilated_img), title('Dilated Image');
+
+% ========== Erosion ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+img = rgb2gray(img); 
+threshold = graythresh(img);
+binary_img = imbinarize(img, threshold);
+se = strel('disk', 5); % You can change 'disk' to 'square', 'line', etc.
+eroded_img = imerode(binary_img, se);
+figure;
+subplot(1, 2, 1), imshow(binary_img), title('Original Binary Image');
+subplot(1, 2, 2), imshow(eroded_img), title('Eroded Image');
+
+
+% ========== Closing ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+img = rgb2gray(img); 
+threshold = graythresh(img);
+binary_img = imbinarize(img, threshold);
+se = strel('disk', 5); 
+closed_img = imclose(binary_img, se);
+figure;
+subplot(1, 2, 1), imshow(binary_img), title('Original Binary Image');
+subplot(1, 2, 2), imshow(closed_img), title('Closed Image');
+
+% ========== opening ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+img = rgb2gray(img); 
+threshold = graythresh(img);
+binary_img = imbinarize(img, threshold);
+se = strel('disk', 5); 
+opened_img = imopen(binary_img, se);
+figure;
+subplot(1, 2, 1), imshow(binary_img), title('Original Binary Image');
+subplot(1, 2, 2), imshow(opened_img), title('Opened Image');
+
+% ========== Chain rule ==========
+
+% Define input binary matrix
+X = [0 1 1 0; 1 0 0 1; 1 0 0 1; 0 1 1 0];
+
+% Define structuring elements
+B1 = [0 1 0; 1 1 1; 0 1 0];
+B2 = [1 1 1; 1 1 1; 1 1 1];
+
+% Chain Rule 1: Erosion
+Erx = imerode(X, B1);
+Erf = imerode(Erx, B2);
+disp('Chain Rule 1 LHS:');
+disp(Erf);
+
+DiB = imdilate(B1, B2);
+Erx1 = imerode(X, DiB);
+disp('Chain Rule 1 RHS:');
+disp(Erx1);
+
+% Chain Rule 2: Dilation
+Dix1 = imdilate(X, B1);
+Dix = imdilate(Dix1, B2);
+disp('Chain Rule 2 LHS:');
+disp(Dix);
+
+DiB = imdilate(B1, B2);
+Dix2 = imdilate(X, DiB);
+disp('Chain Rule 2 RHS:');
+disp(Dix2);
+
+% ========== idempotency==========
+
+% Define input binary matrix
+x = [0 1 1 0; 1 0 0 1; 1 0 0 1; 0 1 1 0];
+
+% Define structuring element
+B = [0 1 0; 1 1 1; 0 1 0];
+
+% Idempotency of Erosion
+Erx = imerode(x, B);
+Erf = imerode(Erx, B);
+disp('Idempotency1 LHS:');
+disp(Erf);
+
+Erx1 = imerode(x, B);
+disp('Idempotency1 RHS:');
+disp(Erx1);
+
+% Idempotency of Dilation
+Dix1 = imdilate(x, B);
+Dix = imdilate(Dix1, B);
+disp('Idempotency2 LHS:');
+disp(Dix);
+
+Dix2 = imdilate(x, B);
+disp('Idempotency2 RHS:');
+disp(Dix2);
+
+% ========== Colour image processing ==========
+
+% CMY model
+RGB=imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+R=RGB;
+G=RGB;
+B=RGB;
+R(:, :, 2)=0;
+R(:, :, 3)=0;
+G(:, :, 1)=0;
+G(:, :, 3)=0;
+B(:, :, 1)=0;
+B(:, :, 2)=0;
+subplot(2, 2, 1), imshow(RGB), title('original image')
+subplot(2, 2, 2), imshow(R), title('Red Component')
+subplot(2, 2, 3), imshow(G), title('Green Component')
+subplot(2, 2, 4), imshow(B), title('Blue Component')
+
+% ========== Remove RGB ==========
+
+a = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+a1 = a;
+b1 = a;
+c1 = a;
+a1(:, :, 1) = 0;  % Remove Red channel
+b1(:, :, 2) = 0;  % Remove Green channel
+c1(:, :, 3) = 0;  % Remove Blue channel
+subplot(2,2,1), imshow(a), title("Original Image");
+subplot(2,2,2), imshow(a1), title("Red Missing!");
+subplot(2,2,3), imshow(b1), title("Green Missing!");
+subplot(2,2,4), imshow(c1), title("Blue Missing!");
+
+
+%========== pseudo-colouring operation ==========
+
+clc;
+clear all;
+% Load the image
+input_img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+% Check if the image is RGB or grayscale
+if size(input_img, 3) == 3
+% Convert RGB to grayscale if the image is color
+input_img = rgb2gray(input_img);
+end
+% Convert image to double for processing
+input_img = double(input_img);
+% Get the size of the image
+[m, n] = size(input_img);
+% Initialize the output image
+output_img = zeros(m, n, 3);
+% Perform pseudo-colouring based on intensity values
+for i = 1:m
+for j = 1:n
+if input_img(i, j) >= 0 && input_img(i, j) < 50
+output_img(i, j, 1) = input_img(i, j) + 50;
+output_img(i, j, 2) = input_img(i, j) + 100;
+output_img(i, j, 3) = input_img(i, j) + 10;
+elseif input_img(i, j) >= 50 && input_img(i, j) < 100
+output_img(i, j, 1) = input_img(i, j) + 35;
+output_img(i, j, 2) = input_img(i, j) + 128;
+output_img(i, j, 3) = input_img(i, j) + 10;
+elseif input_img(i, j) >= 100 && input_img(i, j) < 150
+output_img(i, j, 1) = input_img(i, j) + 152;
+output_img(i, j, 2) = input_img(i, j) + 130;
+output_img(i, j, 3) = input_img(i, j) + 15;
+elseif input_img(i, j) >= 150 && input_img(i, j) < 200
+output_img(i, j, 1) = input_img(i, j) + 50;
+output_img(i, j, 2) = input_img(i, j) + 140;
+output_img(i, j, 3) = input_img(i, j) + 25;
+elseif input_img(i, j) >= 200 && input_img(i, j) <= 256
+output_img(i, j, 1) = input_img(i, j) + 120;
+output_img(i, j, 2) = input_img(i, j) + 160;
+output_img(i, j, 3) = input_img(i, j) + 45;
+end
+end
+end
+% Ensure the output image values are within the valid range [0, 255]
+output_img = uint8(min(max(output_img, 0), 255));
+% Display the input and pseudo-colored images
+subplot(2, 2, 1), imshow(uint8(input_img)), title('Input Image')
+subplot(2, 2, 2), imshow(output_img), title('Pseudo Coloured Image')
+
+%========== Gamma correction ==========
+
+clear all;
+clc;
+I=imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+gamma=1;
+max_intensity =255;%for uint8 image
+%Look up table creation
+LUT = max_intensity .* ( ([0:max_intensity]./max_intensity).^gamma );
+LUT = floor(LUT);
+%Mapping of input pixels into lookup table values
+J = LUT(double(I)+1);
+imshow(I), title('original image');
+figure, imshow(uint8(J)), title('Gamma corrected image')
+xlabel(sprintf('Gamma value is %g', gamma))
+
+```
+
+### **Practical 10**
+```matlab
+%========== Segmentary ==========
+
+a = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+%Conversion of RGB to YCbCr
+b=rgb2ycbcr(a);
+%Threshold is applied only to Cb component
+mask=b(:, :, 2)>120;
+imshow(a), title('original image')
+figure, imshow(mask), title('Segmented image')
+
+%========== Edge Detection ==========
+
+a = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+a = rgb2gray(a);
+b = edge(a, 'roberts');
+c = edge(a, 'sobel');
+d = edge(a, 'prewitt');
+e = edge(a, 'log');
+f = edge(a, 'canny');
+figure;
+subplot(2,3,1), imshow(a), title('Original Image');
+subplot(2,3,2), imshow(b), title('Roberts');
+subplot(2,3,3), imshow(c), title('Sobel');
+subplot(2,3,4), imshow(d), title('Prewitt');
+subplot(2,3,5), imshow(e), title('LoG');
+subplot(2,3,6), imshow(f), title('Canny');
+
+%========== Hough transform ==========
+
+img = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+gray = rgb2gray(img);
+edges = edge(gray, "canny");
+[H, T, R] = hough(edges, "RhoResolution", 0.5, "Theta", -90:0.5:89);
+subplot(2,1,1), imshow(img), title('Original Image');
+subplot(2,1,2), imshow(imadjust(rescale(H)), 'XData', T, 'YData', R, 'InitialMagnification', 'fit');
+xlabel('\theta'), ylabel('\rho'), title('Hough Transform');
+axis on, axis normal, colormap hot;
+```
+
