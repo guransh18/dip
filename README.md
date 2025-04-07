@@ -1,5 +1,6 @@
 
 ### **Practical 01 **  
+```sql
 % Define the filename
 filename = "C:\TANISH PERSONAL\PHOTU\919_1.jpg";
 
@@ -59,6 +60,7 @@ BW = imbinarize(grayImage);
 figure;
 imshow(BW);
 title('Binary Image');
+```
 
 ### **Practical 02: ORDBMS**
 #### **Address Object Type**
