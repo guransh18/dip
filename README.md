@@ -1,6 +1,6 @@
 
 ### **Practical 01 **  
-```sql
+```matlab
 % Define the filename
 filename = "C:\TANISH PERSONAL\PHOTU\919_1.jpg";
 
