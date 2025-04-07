@@ -565,6 +565,223 @@ subplot(1, 2, 2), imshow(power_transformed), title(['Power-Law Transform (Gamma 
 
 ### **Practical 08**
 ```matlab
+ % ========== Low pass filter ==========
+ 
+ [a,b]=freqspace(256,'meshgrid');
+h=zeros(256,256);
+d=sqrt(a.^2+b.^2)<0.5;
+h(d)=1;
+imshow(h),title('lpf transfer fn.')
+
+
+[a b]=freqspace(256,'meshgrid');
+H=zeros(256,256);
+d=abs(a)<0.5&abs(b)<0.5;
+H(d)=1;
+imshow(H),title('Separable LPF')
+
+
+ % ========== High pass filter ==========
+ 
+ a = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+
+% Convert to grayscale if the image is in color
+if size(a, 3) == 3
+	a = rgb2gray(a);
+end
+
+[m, n] = size(a);
+mask = ones(m, n);
+
+% Create a mask for high pass filtering
+for i = 150:180
+	for j = 210:240
+    	mask(i, j) = 0;
+	end
+end
+
+c = fft2(double(a));     	 
+d = fftshift(mask);      	 
+e = c .* d;              	 
+f = abs(ifft2(e));       	 
+
+% Display results
+subplot(2, 2, 1), imshow(a), title('Original Image');
+subplot(2, 2, 2), imshow(mat2gray(f)), title('High Pass Filtered Image');
+subplot(2, 2, 3), imshow(mask), title('High Pass Filter Mask');
+subplot(2, 2, 4), imshow(d), title('Mask After FFT Shift Operation');
+
+
+ % ========== Gaussian Filter  ==========
+ 
+ rng default;
+
+% Create a checkerboard image
+I = checkerboard(8);
+
+% Create a Gaussian point spread function (PSF)
+PSF = fspecial('gaussian', 7, 10);
+
+% Add Gaussian noise to the blurred image
+V = 0.0001;
+BlurredNoisy = imnoise(imfilter(I, PSF), 'gaussian', 0, V);
+
+% Create a binary weight mask (used for regions to be deconvolved)
+WT = zeros(size(I));
+WT(5:end-4, 5:end-4) = 1;
+
+% Initial guess for the PSF (a matrix of ones)
+INITPSF = ones(size(PSF));
+
+% Perform blind deconvolution
+[J, P] = deconvblind(BlurredNoisy, INITPSF, 20, 10 * sqrt(V), WT);
+
+% Display results
+subplot(2, 2, 1);
+imshow(BlurredNoisy);
+title('Blurred and Noisy Image');
+
+subplot(2, 2, 3);
+imshow(J);
+title('Deblurred Image');
+
+subplot(2, 2, 4);
+imshow(P, []);
+title('Recovered PSF');
+
+
+ % ========== Low-pass Gaussian Filter  ==========
+ 
+ im = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+
+% Convert to grayscale if the image is in color
+if size(im, 3) == 3
+	im = rgb2gray(im);
+end
+
+fc = 10;
+imf = fftshift(fft2(double(im)));  % Ensure the image is of type double
+[co, ro] = size(im);
+H = zeros(co, ro);
+cx = round(co / 2);
+cy = round(ro / 2);
+
+for i = 1:co
+	for j = 1:ro
+    	d = (i - cx)^2 + (j - cy)^2;
+    	H(i, j) = exp(-d / (2 * fc^2));
+	end
+end
+
+outf = imf .* H;
+out = abs(ifft2(ifftshift(outf)));  % Inverse FFT with shift
+
+imshow(im), title('Original Image');
+figure, imshow(uint8(out)), title('Gaussian Lowpass Filtered Image');
+figure, imshow(H, []), title('2D View of H');  % Display with scaling
+figure, surf(H), title('3D View of H');
+
+
+ % ========== Gaussian high-pass filter  ==========
+ 
+ im = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+
+% Convert to grayscale if the image is in color
+if size(im, 3) == 3
+	im = rgb2gray(im);
+end
+
+fc = 100;
+imf = fftshift(fft2(double(im)));  % Ensure the image is of type double
+[co, ro] = size(im);
+cx = round(co / 2);
+cy = round(ro / 2);
+H = zeros(co, ro);
+
+for i = 1:co
+	for j = 1:ro
+    	d = (i - cx)^2 + (j - cy)^2;
+    	H(i, j) = exp(-d / (2 * fc^2));
+	end
+end
+
+H = 1 - H;  % Create the highpass filter
+outf = imf .* H;
+out = abs(ifft2(ifftshift(outf)));  % Inverse FFT with shift
+
+imshow(im), title('Original Image');
+figure, imshow(uint8(out)), title('Filtered Image');
+figure, imshow(H, []), title('2D View of H');  % Display with scaling
+figure, surf(H), title('3D View of H');
+
+
+ % ========== Noise  ==========
+ 
+I = imread('eight.tif'); 
+imshow(I);
+title('Original Image');
+J = imnoise(I, 'salt & pepper', 0.10); 
+imshow(J);
+title('Image with Salt & Pepper Noise');
+
+ % ========== Butterworth  ==========
+ 
+ im=imread("cameraman.tif");
+fc=20;%Cutoff frequency
+n=1;
+[co,ro] = size(im);
+cx = round(co/2); % find the centre of the image
+cy = round (ro/2);
+imf=fftshift(fft2(im));
+H=zeros(co,ro);
+for i = 1 : co
+
+   for j =1 : ro
+
+   d = (i-cx).^2 + (j-cy).^ 2;
+
+   H(i,j) = 1/(1+((d/fc/fc).^(2*n)));
+
+   end;
+
+end;
+outf = imf .* H;
+out = abs(ifft2(outf));
+imshow(im),title('Original Image'),
+figure,imshow(uint8(out)),title('Lowpass Filtered Image')
+
+ % ========== Butterworth high-pass filter  ==========
+ 
+ im = imread("C:\TANISH PERSONAL\PHOTU\919_1.jpg");
+% Convert to grayscale if the image is in color
+if size(im, 3) == 3
+	im = rgb2gray(im);
+end
+
+fc = 40;
+n = 1;
+[co, ro] = size(im);
+cx = round(co / 2);
+cy = round(ro / 2);
+imf = fftshift(fft2(double(im)));  % Ensure the image is of type double
+H = zeros(co, ro);
+
+for i = 1:co
+	for j = 1:ro
+    	d = (i - cx)^2 + (j - cy)^2;
+    	if d ~= 0
+        	H(i, j) = 1 / (1 + ((fc^2 / d)^(2 * n)));
+    	end
+	end
+end
+
+outf = imf .* H;
+out = abs(ifft2(ifftshift(outf)));  % Inverse FFT with shift
+
+imshow(im), title('Original Image');
+figure, imshow(uint8(out)), title('Highpass Filtered Image');
+figure, imshow(H, []), title('2D View of H');  % Display with scaling
+figure, surf(H), title('3D View of H');
 
 ```
 
